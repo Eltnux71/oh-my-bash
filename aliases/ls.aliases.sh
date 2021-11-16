@@ -2,13 +2,13 @@
 #  ---------------------------------------------------------------------------
 
 # Directory Listing aliases
-alias ls='/opt/coreutils/bin/ls'
+#alias ls='/opt/coreutils/bin/ls'
 alias dir='ls -hFx'
 alias l.='ls -d .* --color=tty' # short listing, only hidden files - .*
 alias l='ls -lathF'             # long, sort by newest to oldest
 alias L='ls -latrhF'            # long, sort by oldest to newest
 alias la='ls -Al'               # show hidden files
-alias lc='ls -lcr'              # sort by change time
+alias lc='colorls'              # sort by change time
 alias lk='ls -lSr'              # sort by size
 alias lh='ls -lSrh'             # sort by size human readable
 alias lm='ls -al | more'        # pipe through 'more'
