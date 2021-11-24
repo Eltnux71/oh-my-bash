@@ -3,6 +3,7 @@
 
 # Directory Listing aliases
 #alias ls='/opt/coreutils/bin/ls'
+alias ls='colorls'
 alias dir='ls -hFx'
 alias l.='ls -d .* --color=tty' # short listing, only hidden files - .*
 alias l='ls -lathF'             # long, sort by newest to oldest
