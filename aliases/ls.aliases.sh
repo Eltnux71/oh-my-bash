@@ -15,9 +15,9 @@ alias lh='ls -lSrh'             # sort by size human readable
 alias lm='ls -al | more'        # pipe through 'more'
 alias lo='ls -laSFh'            # sort by size largest to smallest
 alias lr='ls -lR'               # recursive ls
-alias lt='ls -latr'             # sort by date order
+alias lt='ls -latr'             # sort by date
 alias lu='ls -lur'              # sort by access time
-
+alias ltree='ls --gs --tree'    # show as a tree layout with git status
 
 #   lr:  Full Recursive Directory Listing
 #   ------------------------------------------
