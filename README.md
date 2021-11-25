@@ -112,7 +112,7 @@ export OSH="$HOME/.dotfiles/oh-my-bash"; sh -c "$(curl -fsSL https://raw.githubu
 ##### 1. Clone the repository:
 
 ```shell
-git clone git://github.com/Eltnux71/oh-my-bash.git ~/.oh-my-bash
+git clone https://github.com/Eltnux71/oh-my-bash.git ~/.oh-my-bash
 ```
 
 ##### 2. *Optionally*, backup your existing `~/.bashrc` file:
