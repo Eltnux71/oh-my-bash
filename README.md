@@ -25,7 +25,7 @@ Oh My Bash is installed by running one of the following commands in your termina
 #### via curl
 
 ```shell
-bash -c "$(curl -fsSL https://github.com/Eltnux71/oh-my-bash/master/tools/install.sh)"
+bash -c "$(curl -fsSL https://github.com/Eltnux71/oh-my-bash/tools/install.sh)"
 ```
 
 #### via wget
