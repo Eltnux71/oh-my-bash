@@ -31,7 +31,7 @@ bash -c "$(curl -fsSL https://github.com/Eltnux71/oh-my-bash/tools/install.sh)"
 #### via wget
 
 ```shell
-bash -c "$(wget https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh -O -)"
+bash -c "$(wget https://github.com/Eltnux71/oh-my-bash/tree/master/tools/install.sh -O -)"
 ```
 
 ## Using Oh My Bash
