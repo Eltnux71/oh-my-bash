@@ -45,13 +45,13 @@ function prompt_setter() {
   history -c
   history -r
   PS1="
-$(clock_prompt) $(scm_char) [${THEME_PROMPT_HOST_COLOR}\u@${THEME_PROMPT_HOST}$reset_color] $(virtualenv_prompt)$(ruby_version_prompt)\w
+$(clock_prompt) $(scm_char) [${THEME_PROMPT_HOST_COLOR}\u@${THEME_PROMPT_HOST}$reset_color] $(_omb_prompt_print_python_venv)$(_omb_prompt_print_ruby_env)\w
 $(doubletime_scm_prompt)$reset_color $ "
   PS2='> '
   PS4='+ '
 }
 
-safe_append_prompt_command prompt_setter
+_omb_util_add_prompt_command prompt_setter
 
 git_prompt_status() {
   local git_status_output

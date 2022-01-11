@@ -49,14 +49,6 @@ icon_end="└❯ "
 
 # FUNCTIONS ===================================================================
 
-# Display virtual environment info
-function virtualenv_prompt {
-  if [[ -n "$VIRTUAL_ENV" ]]; then
-    virtualenv=`basename "$VIRTUAL_ENV"`
-    echo -e "$VIRTUALENV_CHAR$virtualenv "
-  fi
-}
-
 # Rename tab
 function tabname {
   printf "\e]1;$1\a"
@@ -71,9 +63,9 @@ function winname {
 
 # Displays the current prompt
 function prompt_command() {
-  PS1="\n${icon_start}$(virtualenv_prompt)${icon_user}${bold_red}\u${normal}${icon_host}${bold_cyan}\h${normal}${icon_directory}${bold_purple}\W${normal}\$([[ -n \$(git branch 2> /dev/null) ]] && echo \" on ${icon_branch}  \")${white}$(scm_prompt_info)${normal}\n${icon_end}"
+  PS1="\n${icon_start}$(_omb_prompt_print_python_venv)${icon_user}${bold_red}\u${normal}${icon_host}${bold_cyan}\h${normal}${icon_directory}${bold_purple}\W${normal}\$([[ -n \$(git branch 2> /dev/null) ]] && echo \" on ${icon_branch}  \")${white}$(scm_prompt_info)${normal}\n${icon_end}"
   PS2="${icon_end}"
 }
 
 # Runs prompt (this bypasses oh-my-bash $PROMPT setting)
-safe_append_prompt_command prompt_command
+_omb_util_add_prompt_command prompt_command

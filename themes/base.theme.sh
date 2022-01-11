@@ -49,21 +49,54 @@ SCM_SVN_CHAR='⑆'
 SCM_NONE='NONE'
 SCM_NONE_CHAR='○'
 
-RVM_THEME_PROMPT_PREFIX=' |'
-RVM_THEME_PROMPT_SUFFIX='|'
-
 THEME_SHOW_USER_HOST=${THEME_SHOW_USER_HOST:=false}
 USER_HOST_THEME_PROMPT_PREFIX=''
 USER_HOST_THEME_PROMPT_SUFFIX=''
 
-VIRTUALENV_THEME_PROMPT_PREFIX=' |'
-VIRTUALENV_THEME_PROMPT_SUFFIX='|'
+# #new
+# OMB_PROMPT_RBFU_FORMAT=' |%s|'
+# OMB_PROMPT_RBENV_FORMAT=' |%s|'
+# OMB_PROMPT_RVM_FORMAT=' |%s|'
+# OMB_PROMPT_CHRUBY_FORMAT=' |%s|'
 
-RBENV_THEME_PROMPT_PREFIX=' |'
-RBENV_THEME_PROMPT_SUFFIX='|'
-
+# deprecate
 RBFU_THEME_PROMPT_PREFIX=' |'
 RBFU_THEME_PROMPT_SUFFIX='|'
+RBENV_THEME_PROMPT_PREFIX=' |'
+RBENV_THEME_PROMPT_SUFFIX='|'
+RVM_THEME_PROMPT_PREFIX=' |'
+RVM_THEME_PROMPT_SUFFIX='|'
+CHRUBY_THEME_PROMPT_PREFIX=' |'
+CHRUBY_THEME_PROMPT_SUFFIX='|'
+
+# # new
+# OMB_PROMPT_VIRTUALENV_FORMAT=' |%s|'
+# OMB_PROMPT_CONDAENV_FORMAT=' |%s|'
+# OMB_PROMPT_PYTHON_VERSION_FORMAT=' |%s|'
+
+# deprecate
+VIRTUALENV_THEME_PROMPT_PREFIX=' |'
+VIRTUALENV_THEME_PROMPT_SUFFIX='|'
+CONDAENV_THEME_PROMPT_PREFIX=' |'
+CONDAENV_THEME_PROMPT_SUFFIX='|'
+PYTHON_THEME_PROMPT_PREFIX=' |'
+PYTHON_THEME_PROMPT_SUFFIX='|'
+
+## @fn __omb_prompt_construct_format var value fmt_prefix[:deprecated]
+##   @param[in] var
+##   @param[in] value
+##   @param[in] fmt_prefix
+##   @param[in,opt] deprecated
+##   @var[out] $var
+function _omb_prompt_format {
+  local __format=${3%%:*}_FORMAT; __format=${!__format-}
+  if [[ ! $__format ]]; then
+    local __prefix=${3#*:}_PREFIX; __prefix=${!__prefix-} # deprecate name
+    local __suffix=${3#*:}_SUFFIX; __suffix=${!__suffix-} # deprecate name
+    __format=${__prefix//'%'/'%%'}%s${__suffix//'%'/'%%'}
+  fi
+  printf -v "$1" "$__format" "$2"
+}
 
 function scm {
   if [[ "$SCM_CHECK" = false ]]; then SCM=$SCM_NONE
@@ -132,7 +165,7 @@ function scm_prompt_info_common {
 function git_clean_branch {
   local unsafe_ref=$(command git symbolic-ref -q HEAD 2> /dev/null)
   local stripped_ref=${unsafe_ref##refs/heads/}
-  local clean_ref=${stripped_ref//[^a-zA-Z0-9\/]/-}
+  local clean_ref=${stripped_ref//[^a-zA-Z0-9\/_]/-}
   echo $clean_ref
 }
 
@@ -341,71 +374,120 @@ function hg_prompt_vars {
     fi
 }
 
-function rvm_version_prompt {
-  if which rvm &> /dev/null; then
-    rvm=$(rvm-prompt) || return
-    if [ -n "$rvm" ]; then
-      echo -e "$RVM_THEME_PROMPT_PREFIX$rvm$RVM_THEME_PROMPT_SUFFIX"
-    fi
+function _omb_prompt_get_rbfu {
+  rbfu=$RBFU_RUBY_VERSION
+  [[ $rbfu ]] || return 1
+  _omb_prompt_format rbfu "$rbfu" OMB_PROMPT_RBFU:RBFU_THEME_PROMPT
+}
+
+function _omb_prompt_get_rbenv {
+  rbenv=
+  _omb_util_command_exists rbenv || return 1
+
+  rbenv=$(rbenv version-name)
+  rbenv commands | command grep -q gemset &&
+    gemset=$(rbenv gemset active 2> /dev/null) &&
+    rbenv="$rbenv@${gemset%% *}"
+
+  [[ $rbenv != system ]] || return 1
+  _omb_prompt_format rbenv "$rbenv" OMB_PROMPT_RBENV:RBENV_THEME_PROMPT
+}
+
+function _omb_prompt_get_rvm {
+  rvm=
+  if _omb_util_command_exists rvm-prompt; then
+    rvm=$(rvm-prompt)
+  elif _omb_util_command_exists rvm; then
+    local rvm_current=$(rvm tools identifier)
+    local rvm_default=$(rvm strings default)
+    [[ $rvm_current && $rvm_default && $rvm_current != "$rvm_default" ]] || return 1
+    rvm=$rvm_current
   fi
+
+  [[ $rvm ]] || return 1
+  _omb_prompt_format rvm "$rvm" OMB_PROMPT_RVM:RVM_THEME_PROMPT
 }
 
-function rbenv_version_prompt {
-  if which rbenv &> /dev/null; then
-    rbenv=$(rbenv version-name) || return
-    $(rbenv commands | grep -q gemset) && gemset=$(rbenv gemset active 2> /dev/null) && rbenv="$rbenv@${gemset%% *}"
-    if [ $rbenv != "system" ]; then
-      echo -e "$RBENV_THEME_PROMPT_PREFIX$rbenv$RBENV_THEME_PROMPT_SUFFIX"
-    fi
-  fi
+function _omb_prompt_get_chruby {
+  chruby=
+  _omb_util_function_exists chruby || return 1
+
+  _omb_util_function_exists chruby_auto && chruby=$(chruby_auto)
+
+  local ruby_version
+  ruby_version=$(ruby --version | command awk '{print $1, $2;}') || return
+  chruby | command grep -q '\*' || ruby_version="${ruby_version} (system)"
+  _omb_prompt_format ruby_version "$ruby_version" OMB_PROMPT_CHRUBY:CHRUBY_THEME_PROMPT
+
+  chruby+=$ruby_version
 }
 
-function rbfu_version_prompt {
-  if [[ $RBFU_RUBY_VERSION ]]; then
-    echo -e "${RBFU_THEME_PROMPT_PREFIX}${RBFU_RUBY_VERSION}${RBFU_THEME_PROMPT_SUFFIX}"
-  fi
+function _omb_prompt_get_ruby_env {
+  local rbfu rbenv rvm chruby
+  _omb_prompt_get_rbfu
+  _omb_prompt_get_rbenv
+  _omb_prompt_get_rvm
+  _omb_prompt_get_chruby
+  ruby_env=$rbfu$rbenv$rvm$chruby
+  [[ $ruby_env ]]
 }
 
-function chruby_version_prompt {
-  if declare -f -F chruby &> /dev/null; then
-    if declare -f -F chruby_auto &> /dev/null; then
-      chruby_auto
-    fi
+_omb_util_defun_print _omb_prompt_{print,get}_rbfu rbfu
+_omb_util_defun_print _omb_prompt_{print,get}_rbenv rbenv
+_omb_util_defun_print _omb_prompt_{print,get}_rvm rvm
+_omb_util_defun_print _omb_prompt_{print,get}_chruby chruby
+_omb_util_defun_print _omb_prompt_{print,get}_ruby_env ruby_env
 
-    ruby_version=$(ruby --version | awk '{print $1, $2;}') || return
+_omb_util_defun_deprecate 20000 rbfu_version_prompt   _omb_prompt_print_rbfu
+_omb_util_defun_deprecate 20000 rbenv_version_prompt  _omb_prompt_print_rbenv
+_omb_util_defun_deprecate 20000 rvm_version_prompt    _omb_prompt_print_rvm
+_omb_util_defun_deprecate 20000 chruby_version_prompt _omb_prompt_print_chruby
+_omb_util_defun_deprecate 20000 ruby_version_prompt   _omb_prompt_print_ruby_env
 
-    if [[ ! $(chruby | grep '*') ]]; then
-      ruby_version="${ruby_version} (system)"
-    fi
-    echo -e "${CHRUBY_THEME_PROMPT_PREFIX}${ruby_version}${CHRUBY_THEME_PROMPT_SUFFIX}"
-  fi
+function _omb_prompt_get_virtualenv {
+  virtualenv=
+  [[ ${VIRTUAL_ENV-} ]] || return 1
+  _omb_prompt_format virtualenv "$(basename "$VIRTUAL_ENV")" OMB_PROMPT_VIRTUALENV:VIRTUALENV_THEME_PROMPT
 }
 
-function ruby_version_prompt {
-  echo -e "$(rbfu_version_prompt)$(rbenv_version_prompt)$(rvm_version_prompt)$(chruby_version_prompt)"
+function _omb_prompt_get_condaenv {
+  condaenv=
+  [[ ${CONDA_DEFAULT_ENV-} ]] || return 1
+  _omb_prompt_format condaenv "$CONDA_DEFAULT_ENV" OMB_PROMPT_CONDAENV:CONDAENV_THEME_PROMPT
 }
 
-function virtualenv_prompt {
-  if [[ -n "$VIRTUAL_ENV" ]]; then
-    virtualenv=`basename "$VIRTUAL_ENV"`
-    echo -e "$VIRTUALENV_THEME_PROMPT_PREFIX$virtualenv$VIRTUALENV_THEME_PROMPT_SUFFIX"
-  fi
+function _omb_prompt_get_python_version {
+  python_version=$(python --version 2>&1 | command awk '{print "py-"$2;}')
+  [[ $python_version ]] || return 1
+  _omb_prompt_format python_version "$python_version" OMB_PROMPT_PYTHON_VERSION:PYTHON_THEME_PROMPT
 }
 
-function condaenv_prompt {
-  if [[ $CONDA_DEFAULT_ENV ]]; then
-    echo -e "${CONDAENV_THEME_PROMPT_PREFIX}${CONDA_DEFAULT_ENV}${CONDAENV_THEME_PROMPT_SUFFIX}"
-  fi
+function _omb_prompt_get_python_venv {
+  local virtualenv condaenv
+  _omb_prompt_get_virtualenv
+  _omb_prompt_get_condaenv
+  python_venv=$virtualenv$condaenv
+  [[ $python_venv ]]
+}
+function _omb_prompt_get_python_env {
+  local virtualenv condaenv python_version
+  _omb_prompt_get_virtualenv
+  _omb_prompt_get_condaenv
+  _omb_prompt_get_python_version
+  python_env=$virtualenv$condaenv$python_version
+  [[ $python_env ]]
 }
 
-function py_interp_prompt {
-  py_version=$(python --version 2>&1 | awk '{print "py-"$2;}') || return
-  echo -e "${PYTHON_THEME_PROMPT_PREFIX}${py_version}${PYTHON_THEME_PROMPT_SUFFIX}"
-}
+_omb_util_defun_print _omb_prompt_{print,get}_virtualenv virtualenv
+_omb_util_defun_print _omb_prompt_{print,get}_condaenv condaenv
+_omb_util_defun_print _omb_prompt_{print,get}_python_version python_version
+_omb_util_defun_print _omb_prompt_{print,get}_python_venv python_venv
+_omb_util_defun_print _omb_prompt_{print,get}_python_env python_env
 
-function python_version_prompt {
-  echo -e "$(virtualenv_prompt)$(condaenv_prompt)$(py_interp_prompt)"
-}
+_omb_util_defun_deprecate 20000 virtualenv_prompt     _omb_prompt_print_virtualenv
+_omb_util_defun_deprecate 20000 condaenv_prompt       _omb_prompt_print_condaenv
+_omb_util_defun_deprecate 20000 py_interp_prompt      _omb_prompt_print_python_version
+_omb_util_defun_deprecate 20000 python_version_prompt _omb_prompt_print_python_env
 
 function git_user_info {
   # support two or more initials, set by 'git pair' plugin
@@ -474,7 +556,7 @@ function battery_char {
     fi
 }
 
-if ! type_exists 'battery_charge' ; then
+if ! _omb_util_command_exists 'battery_charge' ; then
     # if user has installed battery plugin, skip this...
     function battery_charge (){
         # no op
@@ -484,7 +566,7 @@ fi
 
 # The battery_char function depends on the presence of the battery_percentage function.
 # If battery_percentage is not defined, then define battery_char as a no-op.
-if ! type_exists 'battery_percentage' ; then
+if ! _omb_util_command_exists 'battery_percentage' ; then
     function battery_char (){
       # no op
       echo -n
@@ -501,33 +583,5 @@ function aws_profile {
 
 
 # Returns true if $1 is a shell function.
-fn_exists() {
-  type $1 | grep -q 'shell function'
-}
-
-function safe_append_prompt_command {
-    local prompt_re
-
-    # Set OS dependent exact match regular expression
-    if [[ ${OSTYPE} == darwin* ]]; then
-      # macOS
-      prompt_re="[[:<:]]${1}[[:>:]]"
-    else
-      # Linux, FreeBSD, etc.
-      prompt_re="\<${1}\>"
-    fi
-
-    # See if we need to use the overriden version
-    if [[ $(fn_exists function append_prompt_command_override) ]]; then
-       append_prompt_command_override $1
-       return
-    fi
-
-    if [[ ${PROMPT_COMMAND} =~ ${prompt_re} ]]; then
-      return
-    elif [[ -z ${PROMPT_COMMAND} ]]; then
-      PROMPT_COMMAND="${1}"
-    else
-      PROMPT_COMMAND="${1};${PROMPT_COMMAND}"
-    fi
-}
+_omb_util_defun_deprecate 20000 fn_exists _omb_util_function_exists
+_omb_util_defun_deprecate 20000 safe_append_prompt_command _omb_util_add_prompt_command

@@ -17,7 +17,7 @@ function prompt_command() {
     dtime="$(clock_prompt)"
     user_host="${green}\u@${cyan}\h${normal}"
     current_dir="${bold_blue}\w${normal}"
-    rvm_ruby="${bold_red}$(ruby_version_prompt)${normal}"
+    rvm_ruby="${bold_red}$(_omb_prompt_print_ruby_env)${normal}"
     git_branch="$(scm_prompt_info)${normal}"
     prompt="${bold_green}\$${normal} "
     arrow="${bold_white}▶${normal} "
@@ -30,4 +30,4 @@ function prompt_command() {
 THEME_CLOCK_COLOR=${THEME_CLOCK_COLOR:-"$yellow"}
 THEME_CLOCK_FORMAT=${THEME_TIME_FORMAT:-"%I:%M:%S "}
 
-safe_append_prompt_command prompt_command
+_omb_util_add_prompt_command prompt_command
