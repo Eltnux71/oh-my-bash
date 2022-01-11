@@ -30,3 +30,4 @@ alias fix_term='echo -e "\033c"'            # fix_term:     Reset the conosle.  
 alias cic='set completion-ignore-case On'   # cic:          Make tab-completion case-insensitive
 alias src='source ~/.bashrc'                # src:          Reload .bashrc file
 alias ch='cd /mnt/d/Users/Eltnux'           # Change to working directory
+alias py3='python3'                         # run python3
